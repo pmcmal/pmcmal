@@ -2,8 +2,8 @@ name: Ping Supabase to Prevent Pausing
 
 on:
   schedule:
-    - cron: '0 9 * * 1,4' # Runs at 9:00 AM UTC every Monday and Thursday
-  workflow_dispatch: # Allows manual triggering from the GitHub UI
+    - cron: '0 9 * * 1,4' # Uruchamia się o 9:00 AM UTC w każdy poniedziałek i czwartek
+  workflow_dispatch: # Pozwala na ręczne uruchomienie z UI GitHub
 
 jobs:
   ping:
@@ -24,50 +24,48 @@ jobs:
       - name: Install Supabase Client
         run: npm install @supabase/supabase-js --force
 
-      # Step 4: Ping Supabase (Używa Service Role Key i auth.users)
+      # Step 4: Ping Supabase (Zapytanie do public.ping_activity)
       - name: Ping Supabase
         env:
-          # Używamy tych samych nazw, ale MUSZĄ zawierać poprawny URL i KLUCZ SERVICE ROLE
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} 
-          SUPABASE_KEY: ${{ secrets.NEXT_SERVICE_ROLE_KEY }} 
+          SUPABASE_KEY: ${{ secrets.NEXT_SERVICE_ROLE_KEY }} # Zalecany Klucz Service Role
         run: |
           node -e "
-          (async () => {
-            try {
-              // Używamy stworzonej funkcji createClient
-              const { createClient } = require('@supabase/supabase-js');
-              const supabaseUrl = process.env.SUPABASE_URL;
-              const supabaseServiceKey = process.env.SUPABASE_KEY;
+          const { createClient } = require('@supabase/supabase-js');
 
-              // Weryfikacja
-              if (!supabaseUrl || !supabaseServiceKey) {
-                  throw new Error('Brak wymaganych zmiennych środowiskowych Supabase. Sprawdź GitHub Secrets.');
-              }
+          // Użyj sekretów GitHub
+          const supabaseUrl = process.env.SUPABASE_URL;
+          const supabaseKey = process.env.SUPABASE_KEY; 
 
-              // Konfiguracja klienta (persistance session: false dla środowisk Node.js)
-              const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-                  auth: { persistSession: false }, 
-              });
+          if (!supabaseUrl || !supabaseKey) {
+              console.error('Brak wymaganych zmiennych środowiskowych Supabase.');
+              process.exit(1);
+          }
 
-              // Ping Supabase, odpytując domyślną tabelę 'auth.users'.
-              // Wymaga klucza Service Role Key.
-              const { data, error } = await supabase
-                  .from('users') 
-                  .select('id') 
-                  .limit(1);
+          const supabase = createClient(supabaseUrl, supabaseKey, {
+              auth: { persistSession: false },
+          });
 
-              if (error) {
-                  throw new Error(error.message);
-              }
+          async function pingDatabase() {
+              try {
+                  // Zapytanie do dedykowanej tabeli public.ping_activity
+                  const { data, error } = await supabase
+                      .from('ping_activity') 
+                      .select('id')
+                      .limit(1);
 
-              // Log success
-              console.log('✅ PING SUCCESSFUL. Baza danych jest aktywna.');
-              console.log('Query Result:', data);
-              
-            } catch (err) {
-              // Log i wyjście z błędem
-              console.error('❌ Error pinging Supabase:', err.message);
-              process.exit(1);
-            }
-          })();
+                  if (error) {
+                      throw new Error(error.message);
+                  }
+
+                  console.log('✅ PING SUCCESSFUL. Baza danych jest aktywna.');
+                  console.log(`Otrzymano ${data.length} rekordów.`);
+
+              } catch (e) {
+                  console.error(\`❌ Błąd pingowania Supabase: \${e.message}\`);
+                  process.exit(1);
+              }
+          }
+
+          pingDatabase();
           "
