@@ -15,7 +15,7 @@ Here are some ideas to get you started:
 - ⚡ Fun fact: ...
 -->
 
-I am interested in electronics and computer science. I mainly like to use Python/AI such as Dyad/C++/Powershell scripts. Privately, I create IoT/raspberry pi/ESP32 projects in my workshop. 
+I am interested in electronics and computer science. I mainly like to use Python/AI such as Claude-Code/C++/Powershell scripts. Privately, I create IoT/raspberry pi/ESP32 projects in my workshop. 
 
 <div align="center">
 	<code><img width="45" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/gitlab.png" alt="GitLab" title="GitLab"/></code>
